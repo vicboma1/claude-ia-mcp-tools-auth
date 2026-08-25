@@ -63,14 +63,14 @@ https://railway.app/project/...
 ### Test 1: Home Page
 
 ```bash
-curl https://your-app.up.railway.app/
+curl https://claude-ia-mcp-tools-auth-staging.up.railway.app/
 # Debería retornar HTML con "MCP OAuth Authentication"
 ```
 
 ### Test 2: Check Auth Status
 
 ```bash
-curl https://your-app.up.railway.app/auth/status
+curl https://claude-ia-mcp-tools-auth-staging.up.railway.app/auth/status
 # Respuesta:
 # {"authenticated": false}
 ```
@@ -79,14 +79,14 @@ curl https://your-app.up.railway.app/auth/status
 
 ```bash
 # 1. Start auth flow (redirect)
-curl -L https://your-app.up.railway.app/auth/start
+curl -L https://claude-ia-mcp-tools-auth-staging.up.railway.app/auth/start
 
 # 2. Visit auth callback URL in browser
 # 3. Copy token from page
 
 # 4. Use token
 curl -H "Authorization: Bearer TOKEN" \
-  https://your-app.up.railway.app/auth/status
+  https://claude-ia-mcp-tools-auth-staging.up.railway.app/auth/status
 ```
 
 ## Monitoreo
