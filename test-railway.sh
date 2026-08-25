@@ -17,14 +17,23 @@ echo "Step 1: Start Auth Flow"
 echo "Command: curl -L $RAILWAY_URL/auth/start"
 echo ""
 
-REDIRECT=$(curl -s -L -w "\n%{redirect_url}" "$RAILWAY_URL/auth/start" | tail -1)
-echo "Redirect URL: $REDIRECT"
+# Get the full response and follow redirects
+FULL_RESPONSE=$(curl -s -L "$RAILWAY_URL/auth/start")
 
-STATE=$(echo "$REDIRECT" | grep -oP 'state=\K[^&]*')
+# Extract state from the response
+STATE=$(echo "$FULL_RESPONSE" | grep -oP 'state=\K[A-Za-z0-9_-]+' | head -1)
+
+# If state not found in response, try to extract from the URL in the page
+if [ -z "$STATE" ]; then
+    STATE=$(echo "$FULL_RESPONSE" | grep -oP 'href="[^"]*state=\K[A-Za-z0-9_-]+' | head -1)
+fi
+
 if [ -z "$STATE" ]; then
     echo "ERROR: Could not extract state token"
     exit 1
 fi
+
+echo "Redirect URL: $RAILWAY_URL/auth/callback?state=$STATE"
 
 echo "Extracted State: $STATE"
 echo ""
