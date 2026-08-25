@@ -57,10 +57,11 @@ class TestAuthManager:
         auth_url, state = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
         print(f"  [OK] Generated state: {state[:20]}...")
 
-        result = self.auth_manager.authenticate(state)
-        print(f"  [OK] Authentication result: {result}")
+        success, token = self.auth_manager.authenticate(state)
+        print(f"  [OK] Authentication result: {success}, token: {token[:20] if token else None}...")
 
-        assert result is True
+        assert success is True
+        assert token is not None
         assert state not in self.auth_manager.pending_auths  # State should be consumed
         print("  [PASS] Authentication successful")
 
@@ -68,10 +69,11 @@ class TestAuthManager:
         """Test authentication with invalid state."""
         print("\n[TEST] authenticate - invalid state")
 
-        result = self.auth_manager.authenticate("invalid_state_123")
-        print(f"  [OK] Authentication result: {result}")
+        success, token = self.auth_manager.authenticate("invalid_state_123")
+        print(f"  [OK] Authentication result: {success}, token: {token}")
 
-        assert result is False
+        assert success is False
+        assert token is None
         print("  [PASS] Invalid state rejected")
 
     def test_authenticate_creates_session_token(self):
@@ -82,10 +84,12 @@ class TestAuthManager:
         initial_token_count = len(self.auth_manager.tokens)
         print(f"  [OK] Initial tokens: {initial_token_count}")
 
-        self.auth_manager.authenticate(state)
+        success, token = self.auth_manager.authenticate(state)
         final_token_count = len(self.auth_manager.tokens)
         print(f"  [OK] Final tokens: {final_token_count}")
 
+        assert success is True
+        assert token is not None
         assert final_token_count == initial_token_count + 1
         print("  [PASS] Session token created")
 
@@ -95,9 +99,8 @@ class TestAuthManager:
 
         # Create a valid token
         auth_url, state = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state)
-        token = list(self.auth_manager.tokens.keys())[0]
-        print(f"  [OK] Created token: {token[:20]}...")
+        success, token = self.auth_manager.authenticate(state)
+        print(f"  [OK] Created token: {token[:20] if token else None}...")
 
         result = self.auth_manager.is_authenticated(token)
         print(f"  [OK] Authentication check: {result}")
@@ -121,8 +124,7 @@ class TestAuthManager:
 
         # Create a token and manually expire it
         auth_url, state = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state)
-        token = list(self.auth_manager.tokens.keys())[0]
+        success, token = self.auth_manager.authenticate(state)
 
         # Manually set token to be old (25 hours)
         old_time = (datetime.now() - timedelta(hours=25)).isoformat()
@@ -141,9 +143,8 @@ class TestAuthManager:
         print("\n[TEST] get_user_id - valid token")
 
         auth_url, state = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state)
-        token = list(self.auth_manager.tokens.keys())[0]
-        print(f"  [OK] Created token: {token[:20]}...")
+        success, token = self.auth_manager.authenticate(state)
+        print(f"  [OK] Created token: {token[:20] if token else None}...")
 
         user_id = self.auth_manager.get_user_id(token)
         print(f"  [OK] User ID: {user_id}")
@@ -174,10 +175,11 @@ class TestAuthManager:
         self.auth_manager.pending_auths[state]["created_at"] = old_time
         print(f"  [OK] Set state created_at to 11 minutes ago")
 
-        result = self.auth_manager.authenticate(state)
-        print(f"  [OK] Authentication result: {result}")
+        success, token = self.auth_manager.authenticate(state)
+        print(f"  [OK] Authentication result: {success}, token: {token}")
 
-        assert result is False
+        assert success is False
+        assert token is None
         print("  [PASS] Expired state rejected")
 
     def test_tokens_persistence(self):
@@ -186,9 +188,8 @@ class TestAuthManager:
 
         # Create a token in first manager
         auth_url, state = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state)
-        token1 = list(self.auth_manager.tokens.keys())[0]
-        print(f"  [OK] Created token: {token1[:20]}...")
+        success, token1 = self.auth_manager.authenticate(state)
+        print(f"  [OK] Created token: {token1[:20] if token1 else None}...")
 
         # Create second manager that loads from same file
         auth_manager2 = AuthManager(tokens_file=self.token_file)
@@ -226,13 +227,13 @@ class TestAuthIntegration:
         print(f"  [OK] Step 1 - Generated auth URL")
 
         # Step 2: User clicks and authenticates
-        result = self.auth_manager.authenticate(state)
-        assert result is True
+        success, token = self.auth_manager.authenticate(state)
+        assert success is True
+        assert token is not None
         print(f"  [OK] Step 2 - Authentication successful")
 
-        # Step 3: Get session token
-        token = self.auth_manager.get_session_token(state)
-        print(f"  [OK] Step 3 - Got session token")
+        # Step 3: Verify we have the session token
+        print(f"  [OK] Step 3 - Got session token: {token[:20]}...")
 
         # Step 4: Use token to authenticate requests
         is_auth = self.auth_manager.is_authenticated(token)
@@ -252,17 +253,15 @@ class TestAuthIntegration:
 
         # Create first user
         auth_url1, state1 = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state1)
-        token1 = list(self.auth_manager.tokens.keys())[0]
+        success1, token1 = self.auth_manager.authenticate(state1)
         user1 = self.auth_manager.get_user_id(token1)
-        print(f"  [OK] User 1 token: {token1[:20]}... -> {user1}")
+        print(f"  [OK] User 1 token: {token1[:20] if token1 else None}... -> {user1}")
 
         # Create second user
         auth_url2, state2 = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state2)
-        token2 = list(self.auth_manager.tokens.keys())[-1]
+        success2, token2 = self.auth_manager.authenticate(state2)
         user2 = self.auth_manager.get_user_id(token2)
-        print(f"  [OK] User 2 token: {token2[:20]}... -> {user2}")
+        print(f"  [OK] User 2 token: {token2[:20] if token2 else None}... -> {user2}")
 
         # Verify both tokens work and have different user IDs
         assert self.auth_manager.is_authenticated(token1) is True

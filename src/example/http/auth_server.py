@@ -104,11 +104,9 @@ def auth_callback():
     if not state:
         return jsonify({"error": "Missing state parameter"}), 400
 
-    if not auth_manager.authenticate(state):
+    success, session_token = auth_manager.authenticate(state)
+    if not success or not session_token:
         return jsonify({"error": "Authentication failed"}), 401
-
-    # Get the session token
-    session_token = auth_manager.get_session_token(state)
 
     html = f"""
     <!DOCTYPE html>

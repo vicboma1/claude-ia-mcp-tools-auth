@@ -54,17 +54,17 @@ class AuthManager:
         auth_url = f"http://localhost:5000/auth/callback?state={state}"
         return auth_url, state
 
-    def authenticate(self, state: str) -> bool:
+    def authenticate(self, state: str) -> tuple[bool, Optional[str]]:
         """
         Authenticate with the given state token.
         Validates state and creates a session token.
 
         Returns:
-            True if authentication succeeded
+            (success: bool, session_token: str | None)
         """
         if state not in self.pending_auths:
             logger.warning(f"Invalid state token: {state}")
-            return False
+            return False, None
 
         auth_data = self.pending_auths.pop(state)
 
@@ -72,7 +72,7 @@ class AuthManager:
         created_at = datetime.fromisoformat(auth_data["created_at"])
         if datetime.now() - created_at > timedelta(minutes=10):
             logger.warning(f"State token expired: {state}")
-            return False
+            return False, None
 
         # Create session token
         session_token = secrets.token_urlsafe(32)
@@ -83,10 +83,13 @@ class AuthManager:
         self._save_tokens()
 
         logger.info(f"Authentication successful with session token")
-        return True
+        return True, session_token
 
     def get_session_token(self, state: str) -> Optional[str]:
-        """Get the session token for a state after authentication."""
+        """Get the session token for a state after authentication.
+
+        Note: This is deprecated. Use the return value from authenticate() instead.
+        """
         if state not in self.pending_auths:
             return None
 

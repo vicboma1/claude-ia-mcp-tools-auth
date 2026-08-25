@@ -179,19 +179,6 @@ def handle_request(request: dict) -> dict:
         }
 
     elif method == "tools/call":
-        # Check authentication
-        token = get_auth_token(request)
-        if not token or not auth_manager.is_authenticated(token):
-            return {
-                "jsonrpc": "2.0",
-                "error": {
-                    "code": 401,
-                    "message": "Authentication required. Please visit http://localhost:5000 to authenticate.",
-                    "data": {"authUrl": "http://localhost:5000"}
-                },
-                "id": req_id
-            }
-
         params = request.get("params", {})
         tool_name = params.get("name")
         arguments = params.get("arguments", {})
@@ -205,6 +192,21 @@ def handle_request(request: dict) -> dict:
                 },
                 "id": req_id
             }
+
+        # Check authentication for protected tools
+        # get_auth_url doesn't require authentication
+        if tool_name != "get_auth_url":
+            token = get_auth_token(request)
+            if not token or not auth_manager.is_authenticated(token):
+                return {
+                    "jsonrpc": "2.0",
+                    "error": {
+                        "code": 401,
+                        "message": "Authentication required. Please visit http://localhost:5000 to authenticate.",
+                        "data": {"authUrl": "http://localhost:5000"}
+                    },
+                    "id": req_id
+                }
 
         try:
             handler = TOOLS[tool_name]["handler"]

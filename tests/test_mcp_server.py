@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import json
 import tempfile
 import pytest
-from example.mcp.server import handle_request, TOOLS
+from example.mcp import server as mcp_server
 from example.auth.manager import AuthManager
 
 
@@ -18,9 +18,10 @@ class TestMCPServerAuth:
         """Setup for each test."""
         self.temp_dir = tempfile.mkdtemp()
         self.token_file = os.path.join(self.temp_dir, ".auth_tokens.json")
-        # Import fresh to use new token file
-        from example.auth.manager import AuthManager
+        # Use the auth_manager from the MCP server module
         self.auth_manager = AuthManager(tokens_file=self.token_file)
+        # Replace the server's auth_manager with our test instance
+        mcp_server.auth_manager = self.auth_manager
 
     def teardown_method(self):
         """Cleanup after each test."""
@@ -31,8 +32,8 @@ class TestMCPServerAuth:
     def _get_valid_token(self):
         """Helper to create a valid auth token."""
         auth_url, state = self.auth_manager.generate_auth_url("http://localhost:5000/callback")
-        self.auth_manager.authenticate(state)
-        return list(self.auth_manager.tokens.keys())[0]
+        success, token = self.auth_manager.authenticate(state)
+        return token
 
     def test_initialize_returns_server_info(self):
         """Test initialize returns server info with auth requirement."""
@@ -44,7 +45,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response: {json.dumps(response, indent=2)}")
 
         assert response["jsonrpc"] == "2.0"
@@ -63,7 +64,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response keys: {list(response.keys())}")
 
         assert "result" in response
@@ -81,7 +82,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         tools = response["result"]["tools"]
         tool_names = [t["name"] for t in tools]
 
@@ -104,7 +105,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response: {json.dumps(response, indent=2)}")
 
         assert "error" in response
@@ -127,7 +128,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response: {json.dumps(response, indent=2)}")
 
         assert "error" in response
@@ -152,7 +153,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response has result: {'result' in response}")
 
         assert "result" in response or "error" not in response
@@ -173,7 +174,7 @@ class TestMCPServerAuth:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response: {json.dumps(response, indent=2)}")
 
         assert "result" in response
@@ -202,7 +203,7 @@ class TestMCPServerErrorHandling:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response: {json.dumps(response, indent=2)}")
 
         assert "error" in response
@@ -218,8 +219,7 @@ class TestMCPServerErrorHandling:
         auth_manager = AuthManager(tokens_file=token_file)
 
         auth_url, state = auth_manager.generate_auth_url("http://localhost:5000/callback")
-        auth_manager.authenticate(state)
-        token = list(auth_manager.tokens.keys())[0]
+        success, token = auth_manager.authenticate(state)
 
         request = {
             "jsonrpc": "2.0",
@@ -232,7 +232,7 @@ class TestMCPServerErrorHandling:
             "id": 1
         }
 
-        response = handle_request(request)
+        response = mcp_server.handle_request(request)
         print(f"  [OK] Response: {json.dumps(response, indent=2)}")
 
         assert "error" in response
@@ -258,7 +258,7 @@ class TestMCPServerErrorHandling:
 
         # This should trigger an error in the handler
         try:
-            response = handle_request(request)
+            response = mcp_server.handle_request(request)
             print(f"  [OK] Response: {json.dumps(response, indent=2)}")
             assert "error" in response
             print("  [PASS] Malformed request handled")
