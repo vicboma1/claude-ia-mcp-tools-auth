@@ -20,18 +20,29 @@ echo -e "Base URL: ${BASE_URL}\n"
 echo -e "${YELLOW}Step 1: Start Auth Flow${NC}"
 echo "GET /auth/start"
 
-RESPONSE=$(curl -s -w "\n%{http_code}" -L "$BASE_URL/auth/start")
-HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-BODY=$(echo "$RESPONSE" | sed '$d')
+# Don't follow redirects, get the Location header
+REDIRECT=$(curl -s -w "\n%{http_code}" -L "$BASE_URL/auth/start" | tail -1)
+HTTP_CODE=$(echo "$REDIRECT" | tail -n1)
 
 echo -e "Status: ${GREEN}$HTTP_CODE${NC}"
 
-# Extract auth URL from redirect
-AUTH_URL=$(echo "$BODY" | grep -oP 'http[s]?://[^"]*callback[^"]*' | head -1)
-
-if [ -z "$AUTH_URL" ]; then
-    echo -e "${RED}Error: Could not extract auth URL${NC}"
-    exit 1
+# For Railway, construct the callback URL
+if [[ "$BASE_URL" == *"railway.app"* ]]; then
+    # Extract state from the redirect response
+    STATE=$(curl -s -i "$BASE_URL/auth/start" 2>&1 | grep -oP 'state=\K[^&\s]*' | head -1)
+    if [ -z "$STATE" ]; then
+        echo -e "${RED}Error: Could not extract state token${NC}"
+        exit 1
+    fi
+    AUTH_URL="$BASE_URL/auth/callback?state=$STATE"
+else
+    # For localhost, extract from response body
+    RESPONSE=$(curl -s -L "$BASE_URL/auth/start")
+    AUTH_URL=$(echo "$RESPONSE" | grep -oP 'http[s]?://[^"]*callback[^"]*' | head -1)
+    if [ -z "$AUTH_URL" ]; then
+        echo -e "${RED}Error: Could not extract auth URL${NC}"
+        exit 1
+    fi
 fi
 
 echo -e "Auth URL: ${GREEN}$AUTH_URL${NC}\n"
@@ -49,8 +60,13 @@ HTTP_CODE=$?
 
 echo -e "Status: ${GREEN}200${NC}"
 
-# Extract session token from HTML
-SESSION_TOKEN=$(echo "$CALLBACK_RESPONSE" | grep -oP 'user_[a-f0-9]{16}' | head -1)
+# Extract session token from HTML (multiple patterns to try)
+SESSION_TOKEN=$(echo "$CALLBACK_RESPONSE" | grep -oP 'class="token-box">\K[A-Za-z0-9_-]+' | head -1)
+
+# If not found, try alternative pattern
+if [ -z "$SESSION_TOKEN" ]; then
+    SESSION_TOKEN=$(echo "$CALLBACK_RESPONSE" | grep -oP '[A-Za-z0-9_-]{43,}' | head -1)
+fi
 
 if [ -z "$SESSION_TOKEN" ]; then
     echo -e "${RED}Error: Could not extract session token${NC}"
