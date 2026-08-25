@@ -1,8 +1,8 @@
 # MCP Auth Server - Complete Flow Test
-# Usage: .\test-auth-flow.ps1 [-BaseUrl "http://localhost:5000"] [-Verbose]
+# Usage: .\test-auth-flow.ps1 [-BaseUrl "https://claude-ia-mcp-tools-auth-staging.up.railway.app"] [-Verbose]
 
 param(
-    [string]$BaseUrl = "http://localhost:5000",
+    [string]$BaseUrl = "https://claude-ia-mcp-tools-auth-staging.up.railway.app",
     [switch]$Verbose
 )
 

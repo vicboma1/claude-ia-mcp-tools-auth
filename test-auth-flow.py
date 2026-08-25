@@ -40,7 +40,7 @@ def print_info(msg):
     print(f"{Colors.CYAN}  {msg}{Colors.ENDC}")
 
 def main():
-    base_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:5000"
+    base_url = sys.argv[1] if len(sys.argv) > 1 else "https://claude-ia-mcp-tools-auth-staging.up.railway.app"
 
     print_section("MCP Auth Server - Complete Flow Test")
     print_info(f"Base URL: {base_url}\n")
