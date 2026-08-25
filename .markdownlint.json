@@ -1,0 +1,23 @@
+{
+  "extends": "default",
+  "rules": {
+    "line-length": {
+      "line_length": 120,
+      "code_blocks": true,
+      "code_fence_block": true,
+      "indented_code_block": false
+    },
+    "no-duplicate-heading": {
+      "siblings_only": true
+    },
+    "no-hard-tabs": true,
+    "no-trailing-spaces": true,
+    "no-trailing-punctuation": false,
+    "no-multiple-spaces": true,
+    "no-blanks-blockquote": true,
+    "no-inline-html": false,
+    "ul-indent": {
+      "indent": 2
+    }
+  }
+}

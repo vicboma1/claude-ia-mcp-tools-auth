@@ -1,0 +1,94 @@
+name: Security & Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly on Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+
+    - name: Run bandit security scan
+      run: |
+        bandit -r src -f json -o bandit-report.json
+      continue-on-error: true
+
+    - name: Check for known vulnerabilities
+      run: |
+        safety check --json
+      continue-on-error: true
+
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: bandit-report.json
+
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Check code complexity
+      run: |
+        python -m pip install radon
+        radon cc src -a -s
+      continue-on-error: true
+
+    - name: Check code maintainability
+      run: |
+        radon mi src
+      continue-on-error: true
+
+    - name: Check for unused imports
+      run: |
+        pip install vulture
+        vulture src --min-confidence 80
+      continue-on-error: true
+
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Check for outdated dependencies
+      run: |
+        python -m pip install pip-audit
+        pip-audit
+      continue-on-error: true
