@@ -1,0 +1,11 @@
+mcp>=0.9.0,<1.0
+httpx
+websockets>=12.0
+flask>=2.0
+authlib>=1.2
+python-dotenv
+pytest
+pytest-cov
+ruff
+mypy
+build

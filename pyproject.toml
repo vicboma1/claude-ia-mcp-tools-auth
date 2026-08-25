@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "example-users-mcp"
+version = "1.0.0"
+description = "Example MCP server with OAuth authentication"
+requires-python = ">=3.9"
+dependencies = [
+    "mcp>=0.9.0,<1.0",
+    "httpx",
+    "flask>=2.0",
+    "authlib>=1.2",
+    "python-dotenv",
+]
+
+[project.scripts]
+mcp-server = "src.example.mcp.server:run_server"
+auth-server = "src.example.http.auth_server:run_server"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff",
+    "mypy",
+    "build",
+]
