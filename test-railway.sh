@@ -12,24 +12,20 @@ echo "=========================================="
 echo "URL: $RAILWAY_URL"
 echo ""
 
-# Step 1: Start auth flow and extract state
+# Step 1: Start auth flow and extract state from Location header
 echo "Step 1: Start Auth Flow"
-echo "Command: curl -L $RAILWAY_URL/auth/start"
+echo "Command: curl -s -i $RAILWAY_URL/auth/start"
 echo ""
 
-# Get the full response and follow redirects
-FULL_RESPONSE=$(curl -s -L "$RAILWAY_URL/auth/start")
+# Get the location header which contains the redirect
+LOCATION=$(curl -s -i "$RAILWAY_URL/auth/start" 2>&1 | grep -i "^location:" | sed 's/^location: //i')
 
-# Extract state from the response
-STATE=$(echo "$FULL_RESPONSE" | grep -oP 'state=\K[A-Za-z0-9_-]+' | head -1)
-
-# If state not found in response, try to extract from the URL in the page
-if [ -z "$STATE" ]; then
-    STATE=$(echo "$FULL_RESPONSE" | grep -oP 'href="[^"]*state=\K[A-Za-z0-9_-]+' | head -1)
-fi
+# Extract state from location header
+STATE=$(echo "$LOCATION" | grep -oP 'state=\K[^&\s]*' | head -1)
 
 if [ -z "$STATE" ]; then
-    echo "ERROR: Could not extract state token"
+    echo "ERROR: Could not extract state token from redirect"
+    echo "Location header was: $LOCATION"
     exit 1
 fi
 
@@ -83,7 +79,7 @@ echo "State Token:     $STATE"
 echo "Session Token:   $SESSION_TOKEN"
 echo ""
 
-if echo "$STATUS_RESPONSE" | grep -q '"authenticated": true'; then
+if echo "$STATUS_RESPONSE" | grep -q '"authenticated"\s*:\s*true'; then
     echo "SUCCESS: Auth flow working on Railway!"
     echo ""
     echo "You can now use this token:"
