@@ -126,6 +126,51 @@ pytest --cov=src           # With coverage
 pytest tests/test_auth.py  # Auth tests only
 ```
 
+Run shell script
+
+```
+sh test-auth-flow.sh
+========================================
+  MCP Auth Server - Complete Flow Test
+========================================
+Base URL: https://claude-ia-mcp-tools-auth-staging.up.railway.app
+
+Step 1: Start Auth Flow
+GET /auth/start
+Status: 401
+Auth URL: https://claude-ia-mcp-tools-auth-staging.up.railway.app/auth/callback?state=Xukdt6MwHba0n0UfkOX3lAAanm7MJhSyzomyCJCxj1M
+
+State Token: Xukdt6MwHba0n0UfkOX3lAAanm7MJhSyzomyCJCx...
+
+Step 2: Complete Auth Callback
+GET /auth/callback?state=Xukdt6MwHba0n0UfkOX3lAAanm7MJhSyzomyCJCxj1M
+Status: 200
+Session Token: 7Y6SaanfrLmiOXoE2kUvTbdEfawIMSJyGDaNFPf1...
+
+Step 3: Verify Token with Auth Status
+GET /auth/status -H 'Authorization: Bearer 7Y6SaanfrLmiOXoE2kUvTbdEfawIMSJyGDaNFPf1-Bg'
+Response:
+{"authenticated":true,"user_id":"user_1b25e4982c9904b8"}
+
+========================================
+         TEST RESULTS
+========================================
+State Token:     Xukdt6MwHba0n0UfkOX3lAAanm7MJhSyzomyCJCxj1M
+Session Token:   7Y6SaanfrLmiOXoE2kUvTbdEfawIMSJyGDaNFPf1-Bg
+Authenticated:   true
+User ID:         user_1b25e4982c9904b8
+========================================
+
+Step 4: Test Invalid Token
+GET /auth/status -H 'Authorization: Bearer invalid_token_123'
+Response: {"authenticated":false,"user_id":null}
+
+SUCCESS: Complete auth flow working correctly!
+
+You can now use this token for MCP:
+Authorization: Bearer 7Y6SaanfrLmiOXoE2kUvTbdEfawIMSJyGDaNFPf1-Bg
+
+```
 ## Deployment
 
 For production, update:
