@@ -91,7 +91,9 @@ def index():
 @app.route("/auth/start", methods=["GET"])
 def auth_start():
     """Start authentication flow."""
-    redirect_uri = request.base_url.replace("/auth/start", "/auth/callback")
+    proto = request.headers.get("X-Forwarded-Proto", request.scheme)
+    host = request.headers.get("Host", request.host)
+    redirect_uri = f"{proto}://{host}/auth/callback"
     auth_url, state = auth_manager.generate_auth_url(redirect_uri)
     return redirect(auth_url)
 
