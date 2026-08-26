@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BASE_URL="${1:-https://claude-ia-mcp-tools-auth-staging.up.railway.app}"
+BASE_URL="${1:-http://localhost:5000}"
 VERBOSE="${2:---verbose}"
 
 echo -e "${BLUE}========================================${NC}"
