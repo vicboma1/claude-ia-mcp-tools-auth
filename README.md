@@ -129,7 +129,7 @@ pytest tests/test_auth.py  # Auth tests only
 Run shell script
 
 ```
-sh test-auth-flow.sh
+sh test-auth-railway.sh
 ========================================
   MCP Auth Server - Complete Flow Test
 ========================================
